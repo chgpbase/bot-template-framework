@@ -54,7 +54,7 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
     }
 
     public function sendMenuAndImage($imageUrl, $text, array $markup, $options = null) {
-        $this->reply(OutgoingMessage::create($text, Image::url($imageUrl)), $this->buildMenu([$markup]), $options);
+        $this->reply(OutgoingMessage::create($text, Image::url($imageUrl)), $this->buildMenu([$markup], true), $options);
     }
 
     public function sendList(array $elements, array $globalButton = null, $options = null) {
@@ -73,7 +73,9 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
 
 
     public function sendText($text, $options = null) {
-        return $this->reply($text, [], $options);
+        return $this->reply($text, ['reply_markup' => json_encode(Collection::make([
+            'remove_keyboard' => true,
+        ])->filter())], $options);
     }
 
     protected function buildMenu(array $markup, $inline = true, $oneTimeKeyboard = false, $resizeKeyboard = false) {
@@ -104,6 +106,7 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
             'reply_markup' => json_encode(Collection::make([
                 $type => $menu,
                 'one_time_keyboard' => $oneTimeKeyboard,
+                'remove_keyboard' => $inline,
                 'resize_keyboard' => $resizeKeyboard,
             ])->filter()),
         ];
@@ -241,7 +244,7 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
                 Keyboard::TYPE_KEYBOARD => [
                     [[
                         'request_location' => true,
-                        'text' =>  $options['title'] ?? 'Share Your Location'
+                        'text' =>  $options['title'] ?? trans('bot.share_location_btn')
                     ]]
                 ],
                 'one_time_keyboard' => $options['one_time_keyboard'] ?? true,
@@ -257,7 +260,7 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
                 Keyboard::TYPE_KEYBOARD => [
                     [[
                         'request_location' => true,
-                        'text' => $options['title'] ?? 'Share Your Location'
+                        'text' => $options['title'] ?? trans('bot.share_location_btn')
                     ]]
                 ],
                 'one_time_keyboard' => $options['one_time_keyboard'] ?? true,
@@ -276,7 +279,7 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
                 Keyboard::TYPE_KEYBOARD => [
                     [[
                         'request_contact' => true,
-                        'text' => $options['title'] ?? 'Share Your Phone'
+                        'text' => $options['title'] ?? trans('bot.share_phone_btn')
                     ]]
                 ],
                 'one_time_keyboard' => $options['one_time_keyboard'] ?? true,

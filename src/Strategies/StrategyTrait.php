@@ -3,6 +3,7 @@
 namespace BotTemplateFramework\Strategies;
 
 use BotMan\BotMan\BotMan;
+use BotMan\Drivers\VK\VkCommunityCallbackDriver;
 
 trait StrategyTrait {
     /**
@@ -54,6 +55,8 @@ trait StrategyTrait {
             $driveName = 'Alexa';
         } elseif ($driver instanceof \BotMan\Drivers\Web\WebDriver) {
             $driveName = 'Web';
+        } elseif ($driver instanceof VkCommunityCallbackDriver) {
+            $driveName = 'Vk';
         }
         return $driveName;
 

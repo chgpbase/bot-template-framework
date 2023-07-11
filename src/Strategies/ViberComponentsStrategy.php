@@ -12,10 +12,12 @@ use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use TheArdent\Drivers\Viber\Extensions\CarouselTemplate;
+use TheArdent\Drivers\Viber\Extensions\FileTemplate;
 use TheArdent\Drivers\Viber\Extensions\KeyboardTemplate;
 use TheArdent\Drivers\Viber\Extensions\MenuTemplate;
 use TheArdent\Drivers\Viber\Extensions\PictureTemplate;
 use Exception;
+use TheArdent\Drivers\Viber\Extensions\VideoTemplate;
 
 class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
     protected $bot;
@@ -60,7 +62,11 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
 
     public function sendList(array $elements, array $globalButton = null, $options = null) {
         foreach ($elements as $item) {
-            $this->sendMenuAndImage($item['url'], $item['title'], $item['buttons'], $options);
+            if (array_key_exists('buttons', $item)) {
+                $this->sendMenuAndImage($item['url'], $item['title'], $item['buttons'], $options);
+            } else {
+                $this->sendImage($item['url'], $item['title'], $options);
+            }
         }
 
         if ($globalButton) {
@@ -69,7 +75,12 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
     }
 
     public function sendCarousel(array $elements, $options = null) {
-        $this->reply(new CarouselTemplate($elements));
+        foreach ($elements as $key=>$item) {
+            if (!array_key_exists('buttons', $item)) {
+                $elements[$key]['buttons']=[$item['url']=>$item['title']];
+            }
+        }
+            $this->reply(new CarouselTemplate($elements));
     }
 
     public function sendQuickButtons($text, array $markup, $options = null) {
@@ -81,11 +92,13 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
     }
 
     public function sendVideo($url, $text = null, $options = null) {
-        $this->reply(OutgoingMessage::create($text, new Video($url)));
+//        $this->reply(OutgoingMessage::create($text, new Video($url)));
+        $this->reply(new VideoTemplate($url, $text));
     }
 
     public function sendFile($url, $text = null, $options = null) {
-        $this->reply(OutgoingMessage::create($text, new File($url)), $options ?? []);
+       // $this->reply(OutgoingMessage::create($text, new File($url)), $options ?? []);
+        $this->reply(new FileTemplate($url, $text));
     }
 
     public function sendPayload($payload){
@@ -98,7 +111,7 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
 
     public function requireLocation($text, $options = null) {
         $this->reply((new KeyboardTemplate($text, $options['DefaultHeight'] ?? false))->addButton(
-            $options['title'] ?? 'Share Your Location',
+            $options['title'] ?? trans('bot.share_location_btn'),
             'location-picker', 'location-picker', $options['TextSize'] ?? 'regular',
             $options['BgColor'] ?? null, 6, $options['Silent'] ?? false
         ));
@@ -106,7 +119,7 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
 
     public function requireLocationPayload($text, $options = null) {
         return (new KeyboardTemplate($text, $options['DefaultHeight'] ?? false))->addButton(
-            $options['title'] ?? 'Share Your Location',
+            $options['title'] ?? trans('bot.share_location_btn'),
             'location-picker', 'location-picker', $options['TextSize'] ?? 'regular',
             $options['BgColor'] ?? null, 6, $options['Silent'] ?? false
         );
@@ -114,7 +127,7 @@ class ViberComponentsStrategy implements IComponentsStrategy, IStrategy {
 
     public function requirePhonePayload($text, $options = null) {
         return (new KeyboardTemplate($text, $options['DefaultHeight'] ?? false))->addButton(
-            $options['title'] ?? 'Share Your Phone',
+            $options['title'] ?? trans('bot.share_phone_btn'),
             'share-phone', 'share-phone', $options['TextSize'] ?? 'regular',
             $options['BgColor'] ?? null, 6, $options['Silent'] ?? false
         );

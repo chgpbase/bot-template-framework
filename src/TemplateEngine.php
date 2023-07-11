@@ -90,7 +90,7 @@ class TemplateEngine {
                 }
             }
         }
-
+        if(key_exists('shop_settings', $template)) $config['shop_settings']=$template['shop_settings']; else $config['shop_settings']=[];
         return $config;
     }
 
@@ -137,10 +137,10 @@ class TemplateEngine {
             if (is_array($value)) {
                 $newTemplate[$key] = $this->getParsedTemplate($value, $variables);
             } else {
-                if (preg_match_all('/{{(.+?)}}/', $value, $matches)) {
+                if (preg_match_all('/{{[ ]*(.+?)[ ]*}}/', $value, $matches)) {
                     foreach ($matches[1] as $match) {
                         if (key_exists($match, $variables)) {
-                            $value = preg_replace('/{{' . $match . '}}/', $variables[$match], $value);
+                            $value = preg_replace('/{{[ ]*' . $match . '[ ]*}}/', $variables[$match], $value);
                         }
                     }
                 }
@@ -286,12 +286,11 @@ class TemplateEngine {
     }
 
     public function listen($callback = null) {
-        $lastBlock = $this->getCacheVariable('lastBlock');
+         $lastBlock = $this->getCacheVariable('lastBlock');
         foreach ($this->template['blocks'] as $block) {
             if (!$this->validBlock($block)) {
                 continue;
             }
-
             if (array_key_exists('template', $block) && $block['type'] != 'intent') {
                 $templates = explode(';', $block['template']);
                 foreach ($templates as $template) {
@@ -300,6 +299,38 @@ class TemplateEngine {
                     }
                 }
             }
+//////////////////***********Shop hears *****************///////////////
+            $this->bot->hears('inccart_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'IncCart'], []);
+                return $this;
+            });
+
+            $this->bot->hears('deccart_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'DecCart'], []);
+                return $this;
+            });
+
+            $this->bot->hears('delcart_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'DelCart'], []);
+                return $this;
+            });
+
+            $this->bot->hears('addcart_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'AddCart'], []);
+                return $this;
+            });
+
+            $this->bot->hears('payment_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'Payment'], []);
+                return $this;
+            });
+//////////////////***********End Shop hears *****************///////////////
+//////////////////***********Dialogs hears *****************///////////////
+            $this->bot->hears('start_dialog_(.+)',function(){
+                call_user_func_array([$this->strategy($this->bot), 'DialogWithClient'], []);
+                return $this;
+            });
+//////////////////***********End Dialogs hears *****************///////////////
 
             $this->bot->hears('run_block '.$block['name'], $this->getCallback($block['name'], 'reply_', $callback));
 
@@ -492,6 +523,8 @@ class TemplateEngine {
             $this->executeIf($block);
         } elseif ($type == 'random') {
             $this->executeRandom($block);
+        } elseif ($type == 'start') {
+            // does nothing
         } elseif ($type == 'idle') {
             // does nothing
         } elseif ($type == 'save') {
@@ -554,7 +587,7 @@ class TemplateEngine {
             $value = json_encode($value);
         }
         $matches = [];
-        if (preg_match_all('/{{(.+?)}}/', $name, $matches)) {
+        if (preg_match_all('/{{[ ]*(.+?)[ ]*}}/', $name, $matches)) {
             $name = $matches[1][0];
         }
         $data = $this->bot->userStorage()->find()->toArray();
@@ -635,9 +668,11 @@ class TemplateEngine {
 
     public function parseText($text) {
         $matches = [];
-        if (preg_match_all('/{{(.+?)}}/', $text, $matches)) {
+        if (preg_match_all('/{{[ ]*(.+?)[ ]*}}/', $text, $matches)) {
             foreach ($matches[1] as $match) {
-                $text = preg_replace('/{{' . $match . '}}/', $this->getVariable($match), $text);
+                if(is_array($this->getVariable($match))) $txt= $this->getVariable($match)['text']; else $txt= $this->getVariable($match);
+//                $text = preg_replace('/{{[ ]*' . $match . '[ ]*}}/', $this->getVariable($match), $text);
+                $text = preg_replace('/{{[ ]*' . $match . '[ ]*}}/',$txt, $text);
             }
         }
         return $text;
@@ -716,7 +751,8 @@ class TemplateEngine {
             $client = new Curl();
             $json = [];
             if (array_key_exists('body', $block)) {
-                $json = $this->parseArray($block['body']);
+                //не правильно формировались запросы, исправил
+                foreach ($this->parseArray($block['body']) as $elem) $json[key($elem)]=$elem[key($elem)];
             }
             $headers = [];
             if (array_key_exists('headers', $block)) {
@@ -736,16 +772,32 @@ class TemplateEngine {
         if ($response && $response->getStatusCode() == 200) {
             $result = json_decode($response->getContent(), true);
             if (array_key_exists('result', $block)) {
-                if (array_key_exists('field', $block['result'])) {
-                    $result = $this->getSubVariable($block['result']['field'], $result);
-                }
+                if (array_key_exists('field', $block['result']))
+                    $fields=explode(';',$block['result']['field']);
+                else
+                    $fields=[];
+                if (array_key_exists('save', $block['result']))
+                    $saves=explode(';',$block['result']['save']);
+                else
+                    $saves=[];
+                foreach ($fields as $key=>$field) {
 
-                if (array_key_exists('save', $block['result'])) {
-                    $this->clearAndSaveVariable($block, $result);
+                    $data[$key] = $this->getSubVariable($field, $result);
+
+                    $this->saveVariable($saves[$key], $data[$key]);
+
                 }
+//                if (array_key_exists('field', $block['result'])) {
+//                    $result = $this->getSubVariable($block['result']['field'], $result);
+//                }
+//
+//                if (array_key_exists('save', $block['result'])) {
+//                    $this->clearAndSaveVariable($block, $result);
+//                }
             }
 
-            return $result;
+//            return $result;
+            return implode(';', $data);
         }
 
         return null;
@@ -869,16 +921,24 @@ class TemplateEngine {
     }
 
     protected function executeRandom($block) {
-        $eqs = $block['next'];
-        $rand = rand(0, 100);
+//        $eqs = $block['next'];
+        $min=(array_key_exists('min', $block))?(int)$this->parseText($block['min']):0;
+        $min=($min<0)?0:$min;
+        $max=(array_key_exists('max', $block))?(int)$this->parseText($block['max']):100;
+        $max=($max<0)?0:$max;
+        if($min==0 && $max==0) $max=100;
+//        $rand = rand(0, 100);
+        $rand = rand($min, $max);
         $value = 0;
-        foreach($eqs as $eq) {
-            $value += (int)$this->parseText($eq[0]);
-            if ($value >= $rand) {
-                $this->executeBlock($this->getBlock($eq[1]));
-                return;
-            }
-        }
+        $this->saveVariable($block['variable'], $this->parseText($rand));
+        $this->executeBlock($this->getBlock($block['next']));
+//        foreach($eqs as $eq) {
+//            $value += (int)$this->parseText($eq[0]);
+//            if ($value >= $rand) {
+//                $this->executeBlock($this->getBlock($eq[1]));
+//                return;
+//            }
+//        }
     }
 
     protected function executeSave($block) {
@@ -904,7 +964,37 @@ class TemplateEngine {
     }
 
     public function executeMethod($block){
-        call_user_func_array([$this->strategy($this->bot), $block['method']], $this->lastMethodArguments);
+        //call_user_func_array([$this->strategy($this->bot), $block['method']], $this->lastMethodArguments);
+//        if (array_key_exists('result', $block))
+  //      Log::info(print_r($block, true));
+        $argumets=[];
+        if(array_key_exists('body', $block) && is_array($block['body'])) {
+            foreach ($block['body'] as $input)
+             $argumets[]=$this->parseText($input);
+        }
+    //    Log::info(print_r($argumets, true));
+
+        $result=call_user_func_array([$this->strategy($this->bot), $block['method']], $argumets);
+        //добавили возвращение результатов при вызове методов
+        if (array_key_exists('result', $block)) {
+            if(is_object($result)) $result=(array)$result;
+            if(!is_array($result)) $result=['result'=>$result];
+            if (array_key_exists('field', $block['result']))
+                $fields=explode(';',$block['result']['field']);
+            else
+                $fields=[];
+            if (array_key_exists('save', $block['result']))
+                $saves=explode(';',$block['result']['save']);
+            else
+                $saves=[];
+            $data=[];
+            foreach ($fields as $key=>$field) {
+                if(key_exists($field, $result)){
+                    $data[$key]=$result[$field];
+                    $this->saveVariable($saves[$key], $data[$key]);
+                }
+            }
+        }
     }
 
     protected function getCallback($blockName, $prefix, $callback = null) {

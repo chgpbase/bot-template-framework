@@ -11,12 +11,11 @@ use BotMan\BotMan\Messages\Attachments\Video;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
-use BotMan\Drivers\Facebook\Extensions\ButtonTemplate;
-use BotMan\Drivers\Facebook\Extensions\Element;
-use BotMan\Drivers\Facebook\Extensions\ElementButton;
-use BotMan\Drivers\Facebook\Extensions\ListTemplate;
-use BotMan\Drivers\Facebook\Extensions\QuickReplyButton;
-
+use BotTemplateFramework\Distinct\Web\Extensions\ButtonTemplate;
+use BotTemplateFramework\Distinct\Web\Extensions\Element;
+use BotTemplateFramework\Distinct\Web\Extensions\ElementButton;
+use BotTemplateFramework\Distinct\Web\Extensions\ListTemplate;
+use BotTemplateFramework\Distinct\Web\Extensions\QuickReplyButton;
 class WebComponentsStrategy implements IComponentsStrategy, IStrategy {
     protected $bot;
 

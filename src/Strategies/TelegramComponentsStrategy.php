@@ -32,7 +32,9 @@ class TelegramComponentsStrategy implements IComponentsStrategy, IStrategy {
 
     public function reply($message, $additionalParameters = [], $options = null) {
         $additionalParameters = array_merge($additionalParameters, [
-            'parse_mode' => $options['parse_mode'] ?? 'Markdown',
+//            'parse_mode' => $options['parse_mode'] ?? 'Markdown',
+            ///телеграм не пропускает если нет экранирования спецсимволов при режиме парсинга 'Markdown', 'MarkdownV2'
+            'parse_mode' => $options['parse_mode'] ?? 'html',
             'disable_web_page_preview' => $options['disable_web_page_preview'] ?? false,
             'disable_notification' => $options['disable_notification'] ?? false
 

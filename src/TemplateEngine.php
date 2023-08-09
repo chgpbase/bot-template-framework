@@ -287,19 +287,9 @@ class TemplateEngine {
 
     public function listen($callback = null) {
          $lastBlock = $this->getCacheVariable('lastBlock');
-        foreach ($this->template['blocks'] as $block) {
-            if (!$this->validBlock($block)) {
-                continue;
-            }
-            if (array_key_exists('template', $block) && $block['type'] != 'intent') {
-                $templates = explode(';', $block['template']);
-                foreach ($templates as $template) {
-                    if ($template) {
-                        $this->bot->hears($template, $this->getCallback($block['name'], 'reply_', $callback));
-                    }
-                }
-            }
-//////////////////***********Shop hears *****************///////////////
+        //////////////////***********Shop hears *****************///////////////
+
+        if(!empty(self::getConfig($this->getTemplate(), true)['shop_settings'])) {
             $this->bot->hears('inccart_(.+)',function(){
                 call_user_func_array([$this->strategy($this->bot), 'IncCart'], []);
                 return $this;
@@ -324,13 +314,58 @@ class TemplateEngine {
                 call_user_func_array([$this->strategy($this->bot), 'Payment'], []);
                 return $this;
             });
-//////////////////***********End Shop hears *****************///////////////
-//////////////////***********Dialogs hears *****************///////////////
+        }
+        //////////////////***********End Shop hears *****************///////////////
+
+        // TODO: Добавить в конфиг флаг для отключения расширенных функций для определенных ботов
+        if(true) {
+            //////////////////***********Dialogs hears *****************///////////////
             $this->bot->hears('start_dialog_(.+)',function(){
                 call_user_func_array([$this->strategy($this->bot), 'DialogWithClient'], []);
                 return $this;
             });
-//////////////////***********End Dialogs hears *****************///////////////
+
+            $this->bot->hears('/dialogs',function(){
+                call_user_func_array([$this->strategy($this->bot), 'GetDialogs'], []);
+                return $this;
+            });
+
+            $this->bot->hears('/visitors',function(){
+                call_user_func_array([$this->strategy($this->bot), 'GetVisitors'], []);
+                return $this;
+            });
+
+            $this->bot->hears('/operators',function(){
+                call_user_func_array([$this->strategy($this->bot), 'GetOperators'], []);
+                return $this;
+            });
+
+            $this->bot->hears('/start_dialog',function(){
+                call_user_func_array([$this->strategy($this->bot), 'GetDialogToStart'], []);
+                return $this;
+            });
+
+            $this->bot->hears('/hold_dialog',function(){
+                call_user_func_array([$this->strategy($this->bot), 'SetDialogToHold'], []);
+                return $this;
+            });
+            //////////////////***********End Dialogs hears *****************///////////////
+
+        }
+
+
+        foreach ($this->template['blocks'] as $block) {
+            if (!$this->validBlock($block)) {
+                continue;
+            }
+            if (array_key_exists('template', $block) && $block['type'] != 'intent') {
+                $templates = explode(';', $block['template']);
+                foreach ($templates as $template) {
+                    if ($template) {
+                        $this->bot->hears($template, $this->getCallback($block['name'], 'reply_', $callback));
+                    }
+                }
+            }
 
             $this->bot->hears('run_block '.$block['name'], $this->getCallback($block['name'], 'reply_', $callback));
 

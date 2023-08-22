@@ -320,7 +320,7 @@ class TemplateEngine {
         // TODO: Добавить в конфиг флаг для отключения расширенных функций для определенных ботов
         if(true) {
             //////////////////***********Dialogs hears *****************///////////////
-            $this->bot->hears('start_dialog_(.+)',function(){
+            $this->bot->hears('start_dialog_bot([0-9]+)_(.+)',function(){
                 call_user_func_array([$this->strategy($this->bot), 'DialogWithClient'], []);
                 return $this;
             });

@@ -288,8 +288,7 @@ class TemplateEngine {
     public function listen($callback = null) {
          $lastBlock = $this->getCacheVariable('lastBlock');
         //////////////////***********Shop hears *****************///////////////
-
-        if(!empty(self::getConfig($this->getTemplate(), true)['shop_settings'])) {
+        if(!empty(self::getConfig($this->getTemplate(), [])['shop_settings'])) {
             $this->bot->hears('inccart_(.+)',function(){
                 call_user_func_array([$this->strategy($this->bot), 'IncCart'], []);
                 return $this;
@@ -320,18 +319,13 @@ class TemplateEngine {
         // TODO: Добавить в конфиг флаг для отключения расширенных функций для определенных ботов
         if(true) {
             //////////////////***********Dialogs hears *****************///////////////
-            $this->bot->hears('start_dialog_bot([0-9]+)_(.+)',function(){
+            $this->bot->hears('/start_dialog_(.+)',function(){
                 call_user_func_array([$this->strategy($this->bot), 'DialogWithClient'], []);
                 return $this;
             });
 
             $this->bot->hears('/dialogs',function(){
                 call_user_func_array([$this->strategy($this->bot), 'GetDialogs'], []);
-                return $this;
-            });
-
-            $this->bot->hears('/visitors',function(){
-                call_user_func_array([$this->strategy($this->bot), 'GetVisitors'], []);
                 return $this;
             });
 
@@ -345,10 +339,6 @@ class TemplateEngine {
                 return $this;
             });
 
-            $this->bot->hears('/hold_dialog',function(){
-                call_user_func_array([$this->strategy($this->bot), 'SetDialogToHold'], []);
-                return $this;
-            });
             //////////////////***********End Dialogs hears *****************///////////////
 
         }
@@ -779,7 +769,7 @@ class TemplateEngine {
                 $this->parseArray($parsedButtons), $block['options'] ?? null);
         }
     }
-    
+
     protected function executeRequest($block) {
         $response = null;
         try {

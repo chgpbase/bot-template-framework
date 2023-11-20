@@ -41,10 +41,11 @@ class WebComponentsStrategy implements IComponentsStrategy, IStrategy {
     }
 
     public function sendMenu($text, array $markup, $options = null) {
+        $menu = ButtonTemplate::create($text);
         foreach ($markup as $submenu) {
-            $menu = ButtonTemplate::create($text)->addButtons($this->buildButtons($submenu));
-            $this->reply($menu);
+            $menu->addButtons($this->buildButtons($submenu));
         }
+        $this->reply($menu);
     }
 
     public function sendMenuAndImage($imageUrl, $text, array $markup, $options = null) {
